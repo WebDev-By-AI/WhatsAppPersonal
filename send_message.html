@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WhatsApp Message Intent Analyzer</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        #input-container {
+            margin-bottom: 20px;
+        }
+        #user-prompt {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #25D366;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #128C7E;
+        }
+        #result-container {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+            display: none;
+        }
+        .result-item {
+            margin-bottom: 10px;
+        }
+        .loading {
+            display: none;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>WhatsApp Message Intent Analyzer</h1>
+    <div id="input-container">
+        <label for="user-prompt">Enter your message:</label><br>
+        <textarea id="user-prompt" name="user-prompt" rows="6" placeholder="E.g., 'Send a WhatsApp to John saying hello'"></textarea><br>
+        <button onclick="analyzeIntent()">Analyze Message</button>
+        <div id="loading" class="loading">Analyzing... <span id="loading-dots"></span></div>
+        <button id="btnSendMessage"   onclick="sendMessageToRecipient()">Send Message</button>
+    </div>
+
+    <div id="result-container">
+        <h2>Analysis Results</h2>
+        <div class="result-item">
+            <strong>Intent:</strong> <span id="intent"></span>
+        </div>
+        <div class="result-item">
+            <strong>Action:</strong> <span id="action"></span>
+        </div>
+        <div class="result-item">
+            <strong>Contact:</strong> <span id="contact-name"></span>
+        </div>
+        <div class="result-item">
+            <strong>Message Content:</strong> <span id="message-content"></span>
+        </div>
+        <div class="result-item">
+            <strong>Confidence:</strong> <span id="confidence"></span>
+        </div>
+    </div>
+
+    <script>
+
+        var responseContext = null;
+
+
+        
+
+
+
+
+
+
+
+
+
+        
+
+ function sendMessageToRecipient() {
+    // Show loading animation
+    const stopLoading = showLoading("Sending Message...");
+
+    sendMessage(responseContext.contact, responseContext.message_content)
+        .then((response) => {
+            console.log("Message sent successfully:", response);
+            alert("Message sent!");
+        })
+        .catch((error) => {
+            console.error("Error sending message:", error);
+            alert("Failed to send message. Please try again.");
+        })
+        .finally(() => {
+            stopLoading(); // Hide loading animation after request completion
+        });
+}
+
+
+
+// Show dynamic loading text based on action
+function showLoading(actionText) {
+    const loading = document.getElementById('loading');
+    const dots = document.getElementById('loading-dots');
+    
+    loading.style.display = 'block';
+    loading.innerHTML = `${actionText} <span id="loading-dots"></span>`;
+    
+    let dotCount = 0;
+    const interval = setInterval(() => {
+        dotCount = (dotCount + 1) % 4;
+        document.getElementById('loading-dots').textContent = '.'.repeat(dotCount);
+    }, 500);
+
+    return () => {
+        clearInterval(interval);
+        loading.style.display = 'none';
+    };
+}
+
+// Example Usage:
+
+
+
+
+
+
+
+
+
+
+
+        
+        async function analyzeIntent() 
+        {
+            const prompt = document.getElementById("user-prompt").value.trim();
+            if (!prompt) {
+                alert("Please enter a message to analyze");
+                return;
+            }
+
+            const resultContainer = document.getElementById("result-container");
+            resultContainer.style.display = 'none';
+            
+            // When analyzing
+const stopLoading = showLoading("Analyzing");
+
+// When sending a message
+
+            
+            try {
+                // Replace with your actual API key
+                const apiKey = 'AIzaSyB3AAh1A6c0MHJjjp6bCcJ4-U8XI1QztXs';
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyB3AAh1A6c0MHJjjp6bCcJ4-U8XI1QztXs`;
+               
+                
+
+
+                const analysisPrompt = `
+                    Analyze the following message to determine if the user intends to send a WhatsApp message.
+                    A simple message also means WhatsApp message, such as:
+                    - "Send WhatsApp message"
+                    - "Send message"
+                    - "Send WhatsApp text"
+
+                    The message **may contain**:
+                    1. A recipient contact name or phone number (e.g., "Send message to 923143222666").
+                    2. A **full message content** (e.g., "say hi at 7:15" should be extracted entirely).
+                    3. A **scheduled time** in the message (e.g., "at 7:15").
+                    4. Variations of phrasing like "message is" or "say".
+
+                    **Extract this information in JSON format:**
+                    {
+                        "intent": "yes" or "no" (whether the user intends to send a WhatsApp message),
+                        "action": "send", "forward", "reply", or null,
+                        "contact": Name or phone number of the recipient,
+                        "message_content": The **complete message content** including scheduled time or any extra instructions,
+                        "confidence": "high", "medium", or "low" based on how clear the intent is
+                    }
+
+                    Message: "${prompt}"
+
+                    **Respond ONLY with valid JSON. Do NOT include any explanations, extra text, or formatting markers `;
+
+
+                // Improved prompt for better analysis
+              
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{ text: analysisPrompt }]
+                        }]
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+
+                const responseData = await response.json();
+                
+                // Extract the text response
+                let responseText = '';
+                responseText = responseText.replace(/```json|```/g, '').trim();
+
+                if (responseData.candidates?.[0]?.content?.parts?.[0]?.text) {
+                    responseText = responseData.candidates[0].content.parts[0].text;
+                    
+
+
+
+// Remove the ```json and ``` markers if present
+                    const cleanedText = responseText.replace("```json", "").replace("```", "").trim();
+
+
+                    // Try to parse the JSON response
+                    try {
+                        const result = JSON.parse(cleanedText);
+                        
+                        // Display results
+                        document.getElementById("intent").textContent = 
+                            result.intent === "yes" ? "Send WhatsApp message" : "Not a WhatsApp message";
+                        document.getElementById("action").textContent = 
+                            result.action || "Not specified";
+                        document.getElementById("contact-name").textContent = 
+                            result.contact || "Not specified";
+                        document.getElementById("message-content").textContent = 
+                            result.message_content || "Not specified";
+                        document.getElementById("confidence").textContent = 
+                            result.confidence || "unknown";              
+                       
+                          resultContainer.style.display = 'block';
+                          
+                          //Assign to global variable
+                          responseContext = result;
+
+                    } catch (e) {
+                        console.error("Failed to parse JSON response:", e);
+                        throw new Error("Couldn't parse the AI response");
+                    }
+                } else {
+                    throw new Error("No valid response from the AI");
+                }
+            } catch (error) {
+                console.error("Analysis error:", error);
+                alert("Error analyzing the message. Please try again.");
+            } finally {
+                
+                stopLoading();
+            
+            }
+        }
+
+
+        async function sendMessage(toContact, messageContent) {
+  try {
+
+
+    console.log(toContact);
+    console.log(messageContent);
+
+    
+    const sendResponse = await fetch('http://localhost:8082/api/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ recipient: toContact, message: messageContent })
+    });
+
+    const sendData = await sendResponse.json();
+    console.log('Send response:', sendData);
+
+    if (!sendData.success) {
+      throw new Error(`Failed to send message: ${sendData.message}`);
+    }
+
+    return sendData.success;
+
+  } catch (error) {
+    console.error('Error sending message:', error);
+    // Handle the error appropriately in your application
+    return false; // Or throw the error again if you want the calling function to handle it
+  }
+}
+    </script>
+</body>
+</html>
