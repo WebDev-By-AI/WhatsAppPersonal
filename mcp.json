@@ -1,10 +1,10 @@
 {
   "mcpServers": {
     "whatsapp": {
-      "command": "D:\\whasappmcp\\whatsapp\\venv\\Scripts\\uv.exe", // Run `where uv` and place the output here
+      "command": "D:\\MCP-Servers\\WhatsApp-MCP-Server\\WhatsAppPersonal\\WhatsAppServices\\venv\\Scripts\\uv.exe",
       "args": [
         "--directory",
-        "D:\\whasappmcp\\whatsapp\\whatsapp-mcp-server", // cd into the repo, run `pwd` and enter the output here + "/whatsapp-mcp-server"
+        "D:\\MCP-Servers\\WhatsApp-MCP-Server\\WhatsAppPersonal\\WhatsAppServices\\whatsapp-mcp-server", 
         "run",
         "main.py"
       ]

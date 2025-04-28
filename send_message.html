@@ -1,309 +1,207 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>WhatsApp Message Intent Analyzer</title>
+    <title>Send WhatsApp Message</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
+        .error {
+            color: red;
+            margin: 10px 0;
+        }
+        .success {
+            color: green;
+            margin: 10px 0;
+        }
+        .contact-item {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .contact-item:hover {
+            background-color: #f5f5f5;
+        }
+        .selected {
+            background-color: #e3f2fd;
+            border-color: #2196f3;
+        }
+        .message-form {
+            margin-top: 20px;
             padding: 20px;
-            line-height: 1.6;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            display: none;
         }
-        #input-container {
-            margin-bottom: 20px;
-        }
-        #user-prompt {
+        textarea {
             width: 100%;
+            min-height: 100px;
+            margin: 10px 0;
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
-            font-size: 16px;
         }
         button {
-            background-color: #25D366;
+            padding: 10px 20px;
+            background-color: #2196f3;
             color: white;
             border: none;
-            padding: 10px 20px;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 16px;
-            margin-top: 10px;
         }
         button:hover {
-            background-color: #128C7E;
+            background-color: #1976d2;
         }
-        #result-container {
-            border: 1px solid #ddd;
-            padding: 20px;
-            margin-top: 20px;
-            border-radius: 4px;
-            background-color: #f9f9f9;
-            display: none;
-        }
-        .result-item {
-            margin-bottom: 10px;
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
         }
         .loading {
             display: none;
-            margin: 20px 0;
+            margin: 10px 0;
         }
     </style>
 </head>
 <body>
-    <h1>WhatsApp Message Intent Analyzer</h1>
-    <div id="input-container">
-        <label for="user-prompt">Enter your message:</label><br>
-        <textarea id="user-prompt" name="user-prompt" rows="6" placeholder="E.g., 'Send a WhatsApp to John saying hello'"></textarea><br>
-        <button onclick="analyzeIntent()">Analyze Message</button>
-        <div id="loading" class="loading">Analyzing... <span id="loading-dots"></span></div>
-        <button id="btnSendMessage"   onclick="sendMessageToRecipient()">Send Message</button>
+    <h1>Send WhatsApp Message</h1>
+    
+    <div>
+        <h2>Search Contacts</h2>
+        <input type="text" id="searchInput" placeholder="Enter contact name or number">
+        <button onclick="searchContacts()">Search</button>
+        <div id="results"></div>
     </div>
 
-    <div id="result-container">
-        <h2>Analysis Results</h2>
-        <div class="result-item">
-            <strong>Intent:</strong> <span id="intent"></span>
-        </div>
-        <div class="result-item">
-            <strong>Action:</strong> <span id="action"></span>
-        </div>
-        <div class="result-item">
-            <strong>Contact:</strong> <span id="contact-name"></span>
-        </div>
-        <div class="result-item">
-            <strong>Message Content:</strong> <span id="message-content"></span>
-        </div>
-        <div class="result-item">
-            <strong>Confidence:</strong> <span id="confidence"></span>
-        </div>
+    <div id="messageForm" class="message-form">
+        <h2>Send Message</h2>
+        <div id="selectedContact"></div>
+        <textarea id="messageInput" placeholder="Enter your message"></textarea>
+        <button onclick="sendMessage()" id="sendButton">Send Message</button>
+        <div id="loading" class="loading">Sending message...</div>
+        <div id="result"></div>
     </div>
 
     <script>
+        let selectedContactJID = null;
 
-        var responseContext = null;
+        async function searchContacts() {
+            const query = document.getElementById('searchInput').value;
+            const resultsDiv = document.getElementById('results');
 
-
-        
-
-
-
-
-
-
-
-
-
-        
-
- function sendMessageToRecipient() {
-    // Show loading animation
-    const stopLoading = showLoading("Sending Message...");
-
-    sendMessage(responseContext.contact, responseContext.message_content)
-        .then((response) => {
-            console.log("Message sent successfully:", response);
-            alert("Message sent!");
-        })
-        .catch((error) => {
-            console.error("Error sending message:", error);
-            alert("Failed to send message. Please try again.");
-        })
-        .finally(() => {
-            stopLoading(); // Hide loading animation after request completion
-        });
-}
-
-
-
-// Show dynamic loading text based on action
-function showLoading(actionText) {
-    const loading = document.getElementById('loading');
-    const dots = document.getElementById('loading-dots');
-    
-    loading.style.display = 'block';
-    loading.innerHTML = `${actionText} <span id="loading-dots"></span>`;
-    
-    let dotCount = 0;
-    const interval = setInterval(() => {
-        dotCount = (dotCount + 1) % 4;
-        document.getElementById('loading-dots').textContent = '.'.repeat(dotCount);
-    }, 500);
-
-    return () => {
-        clearInterval(interval);
-        loading.style.display = 'none';
-    };
-}
-
-// Example Usage:
-
-
-
-
-
-
-
-
-
-
-
-        
-        async function analyzeIntent() 
-        {
-            const prompt = document.getElementById("user-prompt").value.trim();
-            if (!prompt) {
-                alert("Please enter a message to analyze");
+            if (!query) {
+                resultsDiv.innerHTML = '<p class="error">Please enter a search query</p>';
                 return;
             }
 
-            const resultContainer = document.getElementById("result-container");
-            resultContainer.style.display = 'none';
-            
-            // When analyzing
-const stopLoading = showLoading("Analyzing");
-
-// When sending a message
-
-            
             try {
-                // Replace with your actual API key
-                const apiKey = 'AIzaSyB3AAh1A6c0MHJjjp6bCcJ4-U8XI1QztXs';
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyB3AAh1A6c0MHJjjp6bCcJ4-U8XI1QztXs`;
-               
-                
-
-
-                const analysisPrompt = `
-                    Analyze the following message to determine if the user intends to send a WhatsApp message.
-                    A simple message also means WhatsApp message, such as:
-                    - "Send WhatsApp message"
-                    - "Send message"
-                    - "Send WhatsApp text"
-
-                    The message **may contain**:
-                    1. A recipient contact name or phone number (e.g., "Send message to 923143222666").
-                    2. A **full message content** (e.g., "say hi at 7:15" should be extracted entirely).
-                    3. A **scheduled time** in the message (e.g., "at 7:15").
-                    4. Variations of phrasing like "message is" or "say".
-
-                    **Extract this information in JSON format:**
-                    {
-                        "intent": "yes" or "no" (whether the user intends to send a WhatsApp message),
-                        "action": "send", "forward", "reply", or null,
-                        "contact": Name or phone number of the recipient,
-                        "message_content": The **complete message content** including scheduled time or any extra instructions,
-                        "confidence": "high", "medium", or "low" based on how clear the intent is
-                    }
-
-                    Message: "${prompt}"
-
-                    **Respond ONLY with valid JSON. Do NOT include any explanations, extra text, or formatting markers `;
-
-
-                // Improved prompt for better analysis
-              
-
-                const response = await fetch(apiUrl, {
+                const response = await fetch('http://localhost:8082/api/search_contacts', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({ query })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('Search results:', data);
+
+                if (data && data.success && data.contacts && data.contacts.length > 0) {
+                    resultsDiv.innerHTML = data.contacts.map(contact => {
+                        // Split "Name - JID" into separate fields
+                        const [name, jid] = contact.split(" - ");
+                        return `<div class="contact-item" onclick="selectContact('${name}', '${jid}')">
+                            <p><strong>Name:</strong> ${name}</p>
+                            <p><strong>JID:</strong> ${jid}</p>
+                        </div>`;
+                    }).join('');
+                } else {
+                    resultsDiv.innerHTML = '<p class="error">No contacts found</p>';
+                }
+            } catch (error) {
+                console.error('Search error:', error);
+                resultsDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        }
+
+        function selectContact(name, jid) {
+            // Update selected contact
+            selectedContactJID = jid;
+            
+            // Update UI
+            document.querySelectorAll('.contact-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+            
+            // Show message form
+            document.getElementById('messageForm').style.display = 'block';
+            document.getElementById('selectedContact').innerHTML = `
+                <p><strong>Selected Contact:</strong> ${name}</p>
+                <p><strong>JID:</strong> ${jid}</p>
+            `;
+        }
+
+        async function sendMessage() {
+            const messageText = document.getElementById('messageInput').value;
+            const resultDiv = document.getElementById('result');
+            const loadingDiv = document.getElementById('loading');
+            const sendButton = document.getElementById('sendButton');
+
+            if (!selectedContactJID) {
+                resultDiv.innerHTML = '<p class="error">Please select a contact first</p>';
+                return;
+            }
+
+            if (!messageText) {
+                resultDiv.innerHTML = '<p class="error">Please enter a message</p>';
+                return;
+            }
+
+            // Disable send button and show loading
+            sendButton.disabled = true;
+            loadingDiv.style.display = 'block';
+            resultDiv.innerHTML = '';
+
+            try {
+                const response = await fetch('http://localhost:8082/api/send', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
                     },
                     body: JSON.stringify({
-                        contents: [{
-                            parts: [{ text: analysisPrompt }]
-                        }]
+                        recipient: selectedContactJID,
+                        message: messageText
                     })
                 });
 
                 if (!response.ok) {
-                    throw new Error(`API error: ${response.status}`);
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
-                const responseData = await response.json();
-                
-                // Extract the text response
-                let responseText = '';
-                responseText = responseText.replace(/```json|```/g, '').trim();
+                const data = await response.json();
+                console.log('Send response:', data);
 
-                if (responseData.candidates?.[0]?.content?.parts?.[0]?.text) {
-                    responseText = responseData.candidates[0].content.parts[0].text;
-                    
-
-
-
-// Remove the ```json and ``` markers if present
-                    const cleanedText = responseText.replace("```json", "").replace("```", "").trim();
-
-
-                    // Try to parse the JSON response
-                    try {
-                        const result = JSON.parse(cleanedText);
-                        
-                        // Display results
-                        document.getElementById("intent").textContent = 
-                            result.intent === "yes" ? "Send WhatsApp message" : "Not a WhatsApp message";
-                        document.getElementById("action").textContent = 
-                            result.action || "Not specified";
-                        document.getElementById("contact-name").textContent = 
-                            result.contact || "Not specified";
-                        document.getElementById("message-content").textContent = 
-                            result.message_content || "Not specified";
-                        document.getElementById("confidence").textContent = 
-                            result.confidence || "unknown";              
-                       
-                          resultContainer.style.display = 'block';
-                          
-                          //Assign to global variable
-                          responseContext = result;
-
-                    } catch (e) {
-                        console.error("Failed to parse JSON response:", e);
-                        throw new Error("Couldn't parse the AI response");
-                    }
+                if (data.success) {
+                    resultDiv.innerHTML = '<p class="success">Message sent successfully!</p>';
+                    // Clear message input
+                    document.getElementById('messageInput').value = '';
                 } else {
-                    throw new Error("No valid response from the AI");
+                    throw new Error(data.message || 'Failed to send message');
                 }
             } catch (error) {
-                console.error("Analysis error:", error);
-                alert("Error analyzing the message. Please try again.");
+                console.error('Send error:', error);
+                resultDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
             } finally {
-                
-                stopLoading();
-            
+                // Re-enable send button and hide loading
+                sendButton.disabled = false;
+                loadingDiv.style.display = 'none';
             }
         }
-
-
-        async function sendMessage(toContact, messageContent) {
-  try {
-
-
-    console.log(toContact);
-    console.log(messageContent);
-
-    
-    const sendResponse = await fetch('http://localhost:8082/api/send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ recipient: toContact, message: messageContent })
-    });
-
-    const sendData = await sendResponse.json();
-    console.log('Send response:', sendData);
-
-    if (!sendData.success) {
-      throw new Error(`Failed to send message: ${sendData.message}`);
-    }
-
-    return sendData.success;
-
-  } catch (error) {
-    console.error('Error sending message:', error);
-    // Handle the error appropriately in your application
-    return false; // Or throw the error again if you want the calling function to handle it
-  }
-}
     </script>
 </body>
 </html>

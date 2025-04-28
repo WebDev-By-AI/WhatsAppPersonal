@@ -677,8 +677,86 @@ func extractDirectPathFromURL(url string) string {
 
 // Start a REST API server to expose the WhatsApp client functionality
 func startRESTServer(client *whatsmeow.Client, messageStore *MessageStore, port int) {
+	// Create a new mux router
+	mux := http.NewServeMux()
+
+	// CORS middleware
+	corsMiddleware := func(next http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			// Set CORS headers
+			w.Header().Set("Access-Control-Allow-Origin", "http://localhost:8000")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Accept")
+			w.Header().Set("Access-Control-Max-Age", "3600")
+
+			// Handle preflight requests
+			if r.Method == "OPTIONS" {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+
+			next(w, r)
+		}
+	}
+
+	// Handler for searching contacts
+	mux.HandleFunc("/api/search_contacts", corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		// Only allow POST requests
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		// Parse the request body
+		var req struct {
+			Query string `json:"query"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "Invalid request format", http.StatusBadRequest)
+			return
+		}
+
+		// Set response headers
+		w.Header().Set("Content-Type", "application/json")
+
+		// Search for contacts in the database
+		rows, err := messageStore.db.Query(`
+			SELECT DISTINCT 
+				jid,
+				name
+			FROM chats
+			WHERE 
+				(LOWER(name) LIKE LOWER(?) OR LOWER(jid) LIKE LOWER(?))
+				AND jid NOT LIKE '%@g.us'
+			ORDER BY name, jid
+			LIMIT 50
+		`, "%"+req.Query+"%", "%"+req.Query+"%")
+
+		if err != nil {
+			http.Error(w, "Database error", http.StatusInternalServerError)
+			return
+		}
+		defer rows.Close()
+
+		var contacts []string
+		for rows.Next() {
+			var jid, name string
+			if err := rows.Scan(&jid, &name); err != nil {
+				continue
+			}
+			// Format as "Name - JID"
+			contacts = append(contacts, fmt.Sprintf("%s - %s", name, jid))
+		}
+
+		// Send response
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": true,
+			"contacts": contacts,
+		})
+	}))
+
 	// Handler for sending messages
-	http.HandleFunc("/api/send", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/send", corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		// Only allow POST requests
 		if r.Method != http.MethodPost {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -721,10 +799,10 @@ func startRESTServer(client *whatsmeow.Client, messageStore *MessageStore, port 
 			Success: success,
 			Message: message,
 		})
-	})
+	}))
 
 	// Handler for downloading media
-	http.HandleFunc("/api/download", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/download", corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		// Only allow POST requests
 		if r.Method != http.MethodPost {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -772,7 +850,7 @@ func startRESTServer(client *whatsmeow.Client, messageStore *MessageStore, port 
 			Filename: filename,
 			Path:     path,
 		})
-	})
+	}))
 
 	// Start the server
 	serverAddr := fmt.Sprintf(":%d", port)
@@ -780,7 +858,7 @@ func startRESTServer(client *whatsmeow.Client, messageStore *MessageStore, port 
 
 	// Run server in a goroutine so it doesn't block
 	go func() {
-		if err := http.ListenAndServe(serverAddr, nil); err != nil {
+		if err := http.ListenAndServe(serverAddr, mux); err != nil {
 			fmt.Printf("REST API server error: %v\n", err)
 		}
 	}()
@@ -906,7 +984,7 @@ func main() {
 	fmt.Println("\n✓ Connected to WhatsApp! Type 'help' for commands.")
 
 	// Start REST API server
-	startRESTServer(client, messageStore, 8080)
+	startRESTServer(client, messageStore, 8082)
 
 	// Create a channel to keep the main goroutine alive
 	exitChan := make(chan os.Signal, 1)

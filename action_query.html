@@ -59,14 +59,30 @@
             text-align: center;
             margin: 20px 0;
         }
+        .examples {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border-left: 4px solid #25D366;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>WhatsApp Action Query</h1>
         <div class="input-group">
-            <input type="text" id="queryInput" placeholder="Enter your query (e.g., 'Send Message to Father')">
+            <input type="text" id="queryInput" placeholder="Enter your query (e.g., 'Send message to John say hello')">
             <button onclick="processQuery()">Execute Action</button>
+        </div>
+        <div class="examples">
+            <h3>Example Queries:</h3>
+            <ul>
+                <li>Send message to John say hello</li>
+                <li>Send message to 923143111666 say How are you?</li>
+                <li>Message to Sarah saying I'll be there in 10 minutes</li>
+                <li>Send WhatsApp to Dad saying I love you</li>
+            </ul>
         </div>
         <div id="loading" class="loading">Processing...</div>
         <div id="result"></div>
@@ -92,14 +108,35 @@
     try {
         console.log('Processing query:', queryInput);
 
-        // Step 1: Extract Contact Name & Message
-        const match = queryInput.match(/send message to ([^,]+), message is (.+)/i);
+        // Step 1: Extract Contact Name & Message using more flexible patterns
+        let contactName, messageText;
+        
+        // Try different patterns to extract contact and message
+        const patterns = [
+            // Pattern 1: "send message to [contact] say [message]"
+            /send message to ([^,]+) say (.+)/i,
+            // Pattern 2: "send message to [contact], message is [message]"
+            /send message to ([^,]+), message is (.+)/i,
+            // Pattern 3: "message to [contact] saying [message]"
+            /message to ([^,]+) saying (.+)/i,
+            // Pattern 4: "send whatsapp to [contact] saying [message]"
+            /send whatsapp to ([^,]+) saying (.+)/i,
+            // Pattern 5: "send message to [contact] [message]"
+            /send message to ([^,]+) (.+)/i
+        ];
+        
+        let match = null;
+        for (const pattern of patterns) {
+            match = queryInput.match(pattern);
+            if (match) break;
+        }
+        
         if (!match) {
-            throw new Error('Invalid query format. Use: "send message to 923143111666, message is Hello!"');
+            throw new Error('Could not understand your query. Please use one of the example formats.');
         }
 
-        const contactName = match[1].trim();
-        const messageText = match[2].trim();
+        contactName = match[1].trim();
+        messageText = match[2].trim();
         console.log('Extracted Contact:', contactName);
         console.log('Extracted Message:', messageText);
 

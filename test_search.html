@@ -2,6 +2,22 @@
 <html>
 <head>
     <title>Test Contact Search</title>
+    <style>
+        .error {
+            color: red;
+            margin: 10px 0;
+        }
+        .success {
+            color: green;
+            margin: 10px 0;
+        }
+        .contact-item {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+    </style>
 </head>
 <body>
     <h1>Test Contact Search</h1>
@@ -14,6 +30,11 @@
             const query = document.getElementById('searchInput').value;
             const resultsDiv = document.getElementById('results');
 
+            if (!query) {
+                resultsDiv.innerHTML = '<p class="error">Please enter a search query</p>';
+                return;
+            }
+
             try {
                 const response = await fetch('http://localhost:8082/api/search_contacts', {
                     method: 'POST',
@@ -24,24 +45,28 @@
                     body: JSON.stringify({ query })
                 });
 
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
                 const data = await response.json();
                 console.log('Search results:', data);
 
-                if (data && data.success && data.contacts.length > 0) {
+                if (data && data.success && data.contacts && data.contacts.length > 0) {
                     resultsDiv.innerHTML = data.contacts.map(contact => {
                         // Split "Name - JID" into separate fields
                         const [name, jid] = contact.split(" - ");
-                        return `<div>
+                        return `<div class="contact-item">
                             <p><strong>Name:</strong> ${name}</p>
                             <p><strong>JID:</strong> ${jid}</p>
                         </div>`;
                     }).join('');
                 } else {
-                    resultsDiv.innerHTML = '<p>No contacts found</p>';
+                    resultsDiv.innerHTML = '<p class="error">No contacts found</p>';
                 }
             } catch (error) {
                 console.error('Search error:', error);
-                resultsDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+                resultsDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
             }
         }
     </script>
